@@ -61,7 +61,7 @@ public final class LoanRepaymentScheduleInstallment extends AbstractAuditableCus
     private Date dueDate;
 
     @Column(name = "principal_amount", scale = 6, precision = 19, nullable = true)
-    private BigDecimal principal;
+    public BigDecimal principal;
 
     @Column(name = "principal_completed_derived", scale = 6, precision = 19, nullable = true)
     private BigDecimal principalCompleted;
@@ -70,7 +70,7 @@ public final class LoanRepaymentScheduleInstallment extends AbstractAuditableCus
     private BigDecimal principalWrittenOff;
 
     @Column(name = "interest_amount", scale = 6, precision = 19, nullable = true)
-    private BigDecimal interestCharged;
+    public BigDecimal interestCharged;
 
     @Column(name = "interest_completed_derived", scale = 6, precision = 19, nullable = true)
     private BigDecimal interestPaid;

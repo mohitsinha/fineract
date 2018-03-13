@@ -20,16 +20,9 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
@@ -492,8 +485,13 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     Money unprocessed = loanRepaymentScheduleTransactionProcessor.handleRepaymentSchedule(currentTransactions, currency,
                             scheduleParams.getInstallments());
 
+                    unprocessed.getCurrency();
+//                    TODO - remove
+//                     unprocessed = unprocessed.minus(new BigDecimal(7334));
+
                     if (unprocessed.isGreaterThanZero()) {
                         scheduleParams.reduceOutstandingBalance(unprocessed);
+//                        scheduleParams.addOutstandingBalance(Money.of(unprocessed.getCurrency(), new BigDecimal(7334)));
                         // pre closure check and processing
                         modifiedInstallment = handlePrepaymentOfLoan(mc, loanApplicationTerms, holidayDetailDTO, scheduleParams,
                                 totalInterestChargedForFullLoanTerm, scheduledDueDate, periodStartDateApplicableForInterest,
@@ -518,10 +516,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                 scheduleParams.getTotalCumulativePrincipal().plus(
                                         currentPeriodParams.getPrincipalForThisPeriod().minus(principalProcessed)),
                                 scheduleParams.getPeriodNumber() + 1, mc));
-                        if (loanApplicationTerms.getAmortizationMethod().isEqualInstallment()
-                                && fixedEmiAmount.compareTo(loanApplicationTerms.getFixedEmiAmount()) != 0) {
-                            currentPeriodParams.setEmiAmountChanged(true);
-                        }
+//                        if (loanApplicationTerms.getAmortizationMethod().isEqualInstallment()
+//                                && fixedEmiAmount.compareTo(loanApplicationTerms.getFixedEmiAmount()) != 0) {
+//                            currentPeriodParams.setEmiAmountChanged(true);
+//                        }
 
                     }
                     adjustCompoundedAmountWithPaidDetail(scheduleParams, lastRestDate, currentTransactions, loanApplicationTerms,
@@ -2356,6 +2354,89 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         }
         periods.addAll(loanScheduleModel.getPeriods());
         LoanScheduleModel loanScheduleModelwithPeriodChanges = LoanScheduleModel.withLoanScheduleModelPeriods(periods, loanScheduleModel);
+
+
+        List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments = loan.getRepaymentScheduleInstallments();
+        //TODO dax repayement
+        if(!CollectionUtils.isEmpty(repaymentScheduleInstallments)) {
+            BigDecimal interestOriginal = loanApplicationTerms.getTotalInterestDue().getAmount();
+            BigDecimal interestCalculatedNew = loanScheduleModelwithPeriodChanges.getTotalInterestCharged();
+
+            BigDecimal differenceInInterest = interestOriginal.subtract(interestCalculatedNew);
+
+            loanScheduleModelwithPeriodChanges.totalInterestCharged = interestOriginal;
+
+            LoanRepaymentScheduleInstallment lastInstallment = retainedInstallments.get(retainedInstallments.size() - 1);
+
+//            TODO - to make this more fail proof about correct amounts
+            LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = repaymentScheduleInstallments.get(0);
+            BigDecimal maxInstallmentAmount = loanRepaymentScheduleInstallment.principal.add(loanRepaymentScheduleInstallment.interestCharged);
+
+
+            loanScheduleModelwithPeriodChanges.totalRepaymentExpected = loanScheduleModelwithPeriodChanges.totalRepaymentExpected.add(differenceInInterest);
+
+            BigDecimal valueOfLastInstallmentAfterAddingInterestDifference = lastInstallment.principal.add(differenceInInterest).add(lastInstallment.interestCharged);
+
+            if(valueOfLastInstallmentAfterAddingInterestDifference.compareTo(maxInstallmentAmount)<=0) {
+
+//                lastInstallment.principal = lastInstallment.principal.add(differenceInInterest);
+                lastInstallment.interestCharged = lastInstallment.interestCharged.add(differenceInInterest);
+
+            }else{
+
+                BigDecimal amountThatCanBeAddedInLastInstallment = maxInstallmentAmount.subtract(lastInstallment.principal.add(lastInstallment.interestCharged));
+
+
+//                lastInstallment.principal= lastInstallment.principal.add(amountThatCanBeAddedInLastInstallment);
+                lastInstallment.interestCharged= lastInstallment.interestCharged.add(amountThatCanBeAddedInLastInstallment);
+
+                differenceInInterest = differenceInInterest.subtract(amountThatCanBeAddedInLastInstallment);
+
+
+                while(differenceInInterest.compareTo(BigDecimal.ZERO)>0){
+                    LoanRepaymentScheduleInstallment currentLatestInstallment = retainedInstallments.get(retainedInstallments.size() - 1);
+
+                    if(differenceInInterest.compareTo(maxInstallmentAmount)<=0){
+//                        TODO add new installment to retainedInstallments with the difference amount
+
+//                            BigDecimal principalToBeSet = differenceInInterest.subtract(loanRepaymentScheduleInstallment.interestCharged);
+
+                            LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallmentNew = new LoanRepaymentScheduleInstallment(null, currentLatestInstallment.getInstallmentNumber() + 1,
+                                    currentLatestInstallment.getFromDate().plusDays(1), currentLatestInstallment.getDueDate().plusDays(1), BigDecimal.ZERO, differenceInInterest,
+                                    null, null, false, new HashSet<>());
+
+                            retainedInstallments.add(loanRepaymentScheduleInstallmentNew);
+
+                            differenceInInterest = BigDecimal.ZERO;
+
+
+
+
+                    }else{
+
+                        LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallmentNew = new LoanRepaymentScheduleInstallment(null, currentLatestInstallment.getInstallmentNumber() + 1,
+                                currentLatestInstallment.getFromDate().plusDays(1), currentLatestInstallment.getDueDate().plusDays(1), BigDecimal.ZERO, maxInstallmentAmount,
+                                null, null, false, new HashSet<>());
+
+
+                        differenceInInterest = differenceInInterest.subtract(maxInstallmentAmount);
+
+
+                        retainedInstallments.add(loanRepaymentScheduleInstallmentNew);
+
+
+                        //                        TODO add new installment to retainedInstallments with the max amount
+
+                    }
+                    loanScheduleModelwithPeriodChanges.loanTermInDays ++;
+
+                }
+
+
+
+            }
+
+        }
         return LoanScheduleDTO.from(retainedInstallments, loanScheduleModelwithPeriodChanges);
     }
 

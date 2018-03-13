@@ -35,14 +35,14 @@ public final class LoanScheduleModel {
 
     private final Collection<LoanScheduleModelPeriod> periods;
     private final ApplicationCurrency applicationCurrency;
-    private final int loanTermInDays;
+    public int loanTermInDays;
     private final Money totalPrincipalDisbursed;
     private final BigDecimal totalPrincipalExpected;
     private final BigDecimal totalPrincipalPaid;
-    private final BigDecimal totalInterestCharged;
+    public BigDecimal totalInterestCharged;
     private final BigDecimal totalFeeChargesCharged;
     private final BigDecimal totalPenaltyChargesCharged;
-    private final BigDecimal totalRepaymentExpected;
+    public BigDecimal totalRepaymentExpected;
     private final BigDecimal totalOutstanding;
 
     public static LoanScheduleModel from(final Collection<LoanScheduleModelPeriod> periods, final ApplicationCurrency applicationCurrency,
