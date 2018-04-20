@@ -1907,15 +1907,22 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final Map<LocalDate, Money> disurseDetail, final boolean excludePastUndisbursed) {
         BigDecimal principal = BigDecimal.ZERO;
         MonetaryCurrency currency = loanApplicationTerms.getPrincipal().getCurrency();
+
         for (DisbursementData disbursementData : loanApplicationTerms.getDisbursementDatas()) {
-            if (disbursementData.disbursementDate().equals(disbursementDate)) {
+            if (disbursementData.disbursementDate().equals(disbursementDate) ) {
+
                 final LoanScheduleModelDisbursementPeriod disbursementPeriod = LoanScheduleModelDisbursementPeriod.disbursement(
                         disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()), chargesDueAtTimeOfDisbursement);
                 periods.add(disbursementPeriod);
                 principal = principal.add(disbursementData.amount());
             } else if (!excludePastUndisbursed || disbursementData.isDisbursed()
                     || !disbursementData.disbursementDate().isBefore(DateUtils.getLocalDateOfTenant())) {
-                disurseDetail.put(disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()));
+                if(disurseDetail.containsKey(disbursementData.disbursementDate())){
+                    Money money = disurseDetail.get(disbursementData.disbursementDate());
+                    disurseDetail.put(disbursementData.disbursementDate(),money.plus(disbursementData.amount()));
+                }else {
+                    disurseDetail.put(disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()));
+                }
             }
         }
         return principal;
