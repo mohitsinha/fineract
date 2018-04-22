@@ -70,7 +70,7 @@ public class LoanDisbursementDetails extends AbstractPersistableCustom<Long> {
     public boolean equals(final Object obj) {
         final LoanDisbursementDetails loanDisbursementDetails = (LoanDisbursementDetails) obj;
         if (loanDisbursementDetails.principal.equals(this.principal)
-                && loanDisbursementDetails.expectedDisbursementDate.equals(this.expectedDisbursementDate)) 
+                && loanDisbursementDetails.expectedDisbursementDate.equals(this.expectedDisbursementDate))
         { return true; }
         return false;
     }
