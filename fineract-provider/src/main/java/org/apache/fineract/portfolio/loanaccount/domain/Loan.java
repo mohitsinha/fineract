@@ -1640,7 +1640,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
         LoanRepaymentScheduleInstallment installment = loanCharge.getOverdueInstallmentCharge().getInstallment();
         LocalDate graceDate = DateUtils.getLocalDateOfTenant().minusDays(penaltyWaitPeriod);
         Money amount = Money.zero(getCurrency());
-        if(!isCustomProduct("PayLater", this.getLoanProduct().productName())) {
+        if(!isCustomProduct("PayLater")) {
             if (graceDate.isAfter(installment.getDueDate())) {
                 amount = calculateOverdueAmountPercentageAppliedTo(installment, loanCharge.getChargeCalculation());
                 if (!amount.isGreaterThanZero()) {
@@ -1653,8 +1653,8 @@ public class Loan extends AbstractPersistableCustom<Long> {
         return amount.getAmount();
     }
 
-    private boolean isCustomProduct(String payLater, String productName) {
-        return payLater.equalsIgnoreCase(productName);
+    public boolean isCustomProduct(String productName) {
+        return productName.equalsIgnoreCase(this.getLoanProduct().productName());
     }
 
     private Money calculateOverdueAmountPercentageAppliedTo(LoanRepaymentScheduleInstallment installment,
@@ -3208,7 +3208,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
             // FIXME - kw - update account balance to negative amount.
             handleLoanOverpayment(loanLifecycleStateMachine);
         } else if (this.summary.isRepaidInFull(loanCurrency())) {
-            if(isCustomProduct("Paylater", this.getLoanProduct().productName())){
+            if(isCustomProduct("Paylater")){
                 // Do nothing
             } else {
                 handleLoanRepaymentInFull(transactionDate, loanLifecycleStateMachine);
