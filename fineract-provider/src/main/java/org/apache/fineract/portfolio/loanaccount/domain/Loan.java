@@ -3203,7 +3203,11 @@ public class Loan extends AbstractPersistableCustom<Long> {
             // FIXME - kw - update account balance to negative amount.
             handleLoanOverpayment(loanLifecycleStateMachine);
         } else if (this.summary.isRepaidInFull(loanCurrency())) {
-            handleLoanRepaymentInFull(transactionDate, loanLifecycleStateMachine);
+            if("Paylater".equalsIgnoreCase(this.getLoanProduct().productName())){
+                // Do nothing
+            } else {
+                handleLoanRepaymentInFull(transactionDate, loanLifecycleStateMachine);
+            }
         }
     }
 
