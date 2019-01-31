@@ -18,30 +18,19 @@
  */
 package org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.collect.Lists;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidDetail;
-import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanChargePaidBy;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanInstallmentCharge;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleProcessingWrapper;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionToRepaymentScheduleMapping;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
+import org.apache.fineract.portfolio.loanaccount.domain.*;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.CreocoreLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.HeavensFamilyLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor;
 import org.joda.time.LocalDate;
+
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * Abstract implementation of {@link LoanRepaymentScheduleTransactionProcessor}
@@ -280,6 +269,12 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
 
         for (final LoanRepaymentScheduleInstallment currentInstallment : installments) {
             if (transactionAmountUnprocessed.isGreaterThanZero()) {
+
+                if(currentInstallment.getLoan().isCustomProductNameContains("DAX")) {
+                    if (currentInstallment.getDueDate().equals(transactionDate) && currentInstallment.isObligationsMet()) {
+                        break;
+                    }
+                }
                 if (currentInstallment.isNotFullyPaidOff()) {
 
                     // is this transaction early/late/on-time with respect to
@@ -298,11 +293,25 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                         // standard transaction
                         transactionAmountUnprocessed = handleTransactionThatIsOnTimePaymentOfInstallment(currentInstallment,
                                 loanTransaction, transactionAmountUnprocessed, transactionMappings);
+
+                        if(currentInstallment.getLoan().isCustomProductNameContains("DAX")) {
+                            break;
+                        }
                     }
                 }
             }
 
             installmentIndex++;
+        }
+        if(!CollectionUtils.isEmpty(installments)) {
+            if (installments.get(0).getLoan().isCustomProductNameContains("DAX")) {
+                for (final LoanRepaymentScheduleInstallment currentInstallment : Lists.reverse(installments)) {
+                    if (transactionAmountUnprocessed.isGreaterThanZero()) {
+                        transactionAmountUnprocessed = handleTransactionThatIsOnTimePaymentOfInstallment(currentInstallment,
+                                loanTransaction, transactionAmountUnprocessed, transactionMappings);
+                    }
+                }
+            }
         }
         loanTransaction.updateLoanTransactionToRepaymentScheduleMappings(transactionMappings);
         return transactionAmountUnprocessed;

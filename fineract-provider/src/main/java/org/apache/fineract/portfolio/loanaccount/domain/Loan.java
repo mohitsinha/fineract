@@ -1601,6 +1601,9 @@ public class Loan extends AbstractPersistableCustom<Long> {
     public boolean isCustomProduct(String productName) {
         return productName.equalsIgnoreCase(this.getLoanProduct().productName());
     }
+    public boolean isCustomProductNameContains(String productName) {
+        return this.getLoanProduct().productName().toLowerCase().contains(productName.toLowerCase());
+    }
 
     private Money calculateOverdueAmountPercentageAppliedTo(LoanRepaymentScheduleInstallment installment,
                                                             ChargeCalculationType calculationType) {
