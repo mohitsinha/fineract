@@ -61,7 +61,10 @@ import org.joda.time.LocalDateTime;
  * Disbursements, Repayments, Waivers, Write-off etc
  */
 @Entity
-@Table(name = "m_loan_transaction", uniqueConstraints = { @UniqueConstraint(columnNames = { "external_id" }, name = "external_id_UNIQUE") })
+@Table(name = "m_loan_transaction"
+//        ,
+//        uniqueConstraints = { @UniqueConstraint(columnNames = { "external_id" }, name = "external_id_UNIQUE") }
+        )
 public class LoanTransaction extends AbstractPersistableCustom<Long> {
 
     @ManyToOne(optional = false)
