@@ -728,7 +728,7 @@ public class Loan extends AbstractPersistableCustom<Long> {
     private void validateChargeHasValidSpecifiedDateIfApplicable(final LoanCharge loanCharge, final LocalDate disbursementDate,
             final LocalDate lastRepaymentPeriodDueDate) {
         if (loanCharge.isSpecifiedDueDate()
-                && !loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, lastRepaymentPeriodDueDate)) {
+                && !loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate.minusDays(1), lastRepaymentPeriodDueDate)) {
             final String defaultUserMessage = "This charge with specified due date cannot be added as the it is not in schedule range.";
             throw new LoanChargeCannotBeAddedException("loanCharge", "specified.due.date.outside.range", defaultUserMessage,
                     getDisbursementDate(), lastRepaymentPeriodDueDate, loanCharge.name());
